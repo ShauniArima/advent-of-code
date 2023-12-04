@@ -7,26 +7,12 @@ fun main() {
             .map(Scratchcard::winningNumbersCountFromNumbers)
             .sumOf { 2.0.pow(it - 1).toInt() }
 
-    fun part2(scratchcards: List<Scratchcard>): Int {
-        val scratchcardsToPlay: ArrayDeque<Scratchcard> = scratchcards
-            .toCollection(ArrayDeque())
-
-        val scratchcardsPlayed: ArrayDeque<Scratchcard> = ArrayDeque()
-
-        while (scratchcardsToPlay.isNotEmpty()) {
-            val scratchcard = scratchcardsToPlay.removeFirst()
-
-            val wonScratchcards = IntRange(
-                scratchcard.id + 1,
-                scratchcard.id + scratchcard.winningNumbersCountFromNumbers
-            ).map { scratchcards[it - 1] }
-
-            scratchcardsToPlay.addAll(wonScratchcards)
-            scratchcardsPlayed.add(scratchcard)
-        }
-
-        return scratchcardsPlayed.size
-    }
+    fun part2(scratchcards: List<Scratchcard>): Int =
+        scratchcards
+            .asSequence()
+            .flatMap { it.play(scratchcards) }
+            .plus(scratchcards)
+            .count()
 
     val testInput = readScratchPadsFromInput("Day04_test")
     check(part1(testInput) == 13)
