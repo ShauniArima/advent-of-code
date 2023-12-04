@@ -1,4 +1,3 @@
-import kotlin.collections.ArrayDeque
 import kotlin.math.pow
 
 fun main() {
@@ -7,12 +6,15 @@ fun main() {
             .map(Scratchcard::winningNumbersCountFromNumbers)
             .sumOf { 2.0.pow(it - 1).toInt() }
 
-    fun part2(scratchcards: List<Scratchcard>): Int =
-        scratchcards
-            .asSequence()
-            .flatMap { it.play(scratchcards) }
-            .plus(scratchcards)
-            .count()
+    fun part2(scratchcards: List<Scratchcard>): Int {
+        val cachedPlayResults = HashMap<Int, List<Scratchcard>>()
+
+        return scratchcards
+            .parallelStream()
+            .flatMap { it.play(scratchcards, cachedPlayResults).stream() }
+            .toList()
+            .size.plus(scratchcards.size)
+    }
 
     val testInput = readScratchPadsFromInput("Day04_test")
     check(part1(testInput) == 13)
@@ -34,15 +36,28 @@ data class Scratchcard(
 ) {
     val winningNumbersCountFromNumbers get() = winningNumbers.intersect(numbers).count()
 
-    fun play(scratchcards: List<Scratchcard>): List<Scratchcard> =
-        when (winningNumbersCountFromNumbers) {
-            0 -> emptyList()
-            else -> IntRange(
-                    id + 1,
-                    id + winningNumbersCountFromNumbers
-                )
-                .map { scratchcards[it - 1] }
-                .flatMap { it.play(scratchcards).plus(it) }
+    fun play(
+        scratchcards: List<Scratchcard>,
+        cachedPlayResults: HashMap<Int, List<Scratchcard>>
+    ): List<Scratchcard> =
+        when (cachedPlayResults.contains(id)) {
+            true -> cachedPlayResults.getValue(id)
+            else -> {
+                val result = when (winningNumbersCountFromNumbers) {
+                    0 -> emptyList()
+                    else -> IntRange(
+                        id + 1,
+                        id + winningNumbersCountFromNumbers
+                    )
+                        .map { scratchcards[it - 1] }
+                        .flatMap { it.play(scratchcards, cachedPlayResults).plus(it) }
+                }
+
+                cachedPlayResults[id] = result
+
+                result
+            }
+
         }
 
 
